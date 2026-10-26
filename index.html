@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DailyDesk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+:root{
+  --bg:#f2f5f6; --surface:#ffffff; --ink:#13222b; --muted:#5b6b75; --line:#d6dfe3;
+  --world:#b4472f; --sap:#0b6f8a; --sapjobs:#2f6b3f; --test:#6a4aa0;
+  --accent:var(--world);
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f181d; --surface:#17232a; --ink:#e7eef1; --muted:#97a8b1; --line:#2a3a43;
+    --world:#e8856d; --sap:#4fb6d0; --sapjobs:#6fc283; --test:#b497e6;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f181d; --surface:#17232a; --ink:#e7eef1; --muted:#97a8b1; --line:#2a3a43;
+  --world:#e8856d; --sap:#4fb6d0; --sapjobs:#6fc283; --test:#b497e6;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 "Source Sans 3",system-ui,sans-serif}
+.shell{max-width:1040px;margin:0 auto;padding:20px 16px 48px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+h1{font:700 28px/1.1 "Bricolage Grotesque",system-ui,sans-serif;margin:0;letter-spacing:-.01em}
+.date{color:var(--muted);font-size:14px}
+.notice{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);padding:10px 14px;border-radius:6px;font-size:14px;color:var(--muted);margin-bottom:16px}
+nav{display:flex;gap:6px;overflow-x:auto;border-bottom:2px solid var(--line);margin-bottom:16px}
+nav button{flex:none;background:none;border:0;padding:10px 14px;font:600 15px "Source Sans 3",system-ui,sans-serif;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
+nav button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+nav button:focus-visible,.chip:focus-visible,.save:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+input[type=search]{flex:1 1 220px;min-width:0;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);font:inherit}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:999px;font:600 14px "Source Sans 3",system-ui,sans-serif;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.list{display:grid;gap:10px}
+article{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:grid;grid-template-columns:1fr auto;gap:4px 12px}
+article h2{font:700 18px/1.3 "Bricolage Grotesque",system-ui,sans-serif;margin:0}
+article p{margin:0;color:var(--muted);font-size:15px;grid-column:1}
+.meta{grid-column:1;font-size:13px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
+.tag{color:var(--accent);font-weight:600}
+.save{grid-row:1/3;grid-column:2;align-self:start;background:none;border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:6px 10px;font:600 13px "Source Sans 3",system-ui,sans-serif;cursor:pointer}
+.save[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.apply{grid-column:1;font-weight:600;color:var(--accent);text-decoration:none;font-size:14px}
+.empty{padding:28px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:8px}
+@media (prefers-reduced-motion:no-preference){nav button,.chip,.save{transition:background .15s,color .15s}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <h1>DailyDesk</h1>
+    <span class="date" id="date"></span>
+  </header>
+  <div class="notice">This is the design with sample items. Live news and jobs connect in the next step.</div>
+  <nav role="tablist" id="tabs"></nav>
+  <div class="tools">
+    <input type="search" id="q" placeholder="Search this tab" aria-label="Search this tab">
+    <button class="chip" id="savedOnly" aria-pressed="false">Saved only</button>
+  </div>
+  <div class="chips" id="chips" style="margin-bottom:14px"></div>
+  <div class="list" id="list"></div>
+</div>
+<script>
+var TABS=[
+ {id:"world",name:"World news",color:"--world",cats:["All","Business","Technology","India","Science"],items:[
+  {t:"Sample: Global markets open mixed as investors watch rate signals",c:"Business",s:"Placeholder summary for a business headline.",src:"Sample source",d:"Today"},
+  {t:"Sample: New chip design promises longer battery life",c:"Technology",s:"Placeholder summary for a technology headline.",src:"Sample source",d:"Today"},
+  {t:"Sample: State announces new metro line extension",c:"India",s:"Placeholder summary for an India headline.",src:"Sample source",d:"Yesterday"},
+  {t:"Sample: Researchers publish findings on ocean temperature trends",c:"Science",s:"Placeholder summary for a science headline.",src:"Sample source",d:"Yesterday"},
+  {t:"Sample: Central bank holds policy rate steady",c:"Business",s:"Placeholder summary for a second business headline.",src:"Sample source",d:"2 days ago"}]},
+ {id:"sap",name:"SAP updates",color:"--sap",cats:["All","SAC","S/4HANA","Datasphere","Releases"],items:[
+  {t:"Sample: SAC quarterly release adds new planning options",c:"SAC",s:"Placeholder for a release note about planning and data actions.",src:"Sample source",d:"Today"},
+  {t:"Sample: Datasphere update improves modeling workflow",c:"Datasphere",s:"Placeholder for a Datasphere announcement.",src:"Sample source",d:"Yesterday"},
+  {t:"Sample: S/4HANA release notes: finance and planning changes",c:"S/4HANA",s:"Placeholder for an S/4HANA update.",src:"Sample source",d:"2 days ago"},
+  {t:"Sample: SAP Community blog on allocation data actions",c:"SAC",s:"Placeholder for a community blog post.",src:"Sample source",d:"3 days ago"},
+  {t:"Sample: Upcoming SAP release schedule",c:"Releases",s:"Placeholder for a release calendar item.",src:"Sample source",d:"4 days ago"}]},
+ {id:"sapjobs",name:"SAP jobs",color:"--sapjobs",cats:["All","SAC","S/4HANA","BW","Fresher"],jobs:true,items:[
+  {t:"Sample: SAP Analytics Cloud Planning Consultant",c:"SAC",co:"Company A",loc:"Hyderabad",exp:"2 to 4 years",d:"Today"},
+  {t:"Sample: SAP SAC Developer",c:"SAC",co:"Company B",loc:"Bengaluru",exp:"1 to 3 years",d:"Today"},
+  {t:"Sample: SAP S/4HANA Finance Analyst",c:"S/4HANA",co:"Company C",loc:"Pune",exp:"3 to 6 years",d:"Yesterday"},
+  {t:"Sample: SAP BW Support Engineer",c:"BW",co:"Company D",loc:"Chennai",exp:"2 to 5 years",d:"2 days ago"},
+  {t:"Sample: Junior SAP Analyst Trainee",c:"Fresher",co:"Company E",loc:"Hyderabad",exp:"0 to 1 year",d:"3 days ago"}]},
+ {id:"testjobs",name:"Automation testing jobs",color:"--test",cats:["All","Selenium","API testing","Playwright","Fresher"],jobs:true,items:[
+  {t:"Sample: Automation Test Engineer (Selenium)",c:"Selenium",co:"Company F",loc:"Hyderabad",exp:"2 to 5 years",d:"Today"},
+  {t:"Sample: QA Automation Engineer (Playwright)",c:"Playwright",co:"Company G",loc:"Remote",exp:"3 to 6 years",d:"Today"},
+  {t:"Sample: API Test Automation Engineer",c:"API testing",co:"Company H",loc:"Bengaluru",exp:"2 to 4 years",d:"Yesterday"},
+  {t:"Sample: SDET",c:"Selenium",co:"Company I",loc:"Pune",exp:"4 to 8 years",d:"2 days ago"},
+  {t:"Sample: Graduate QA Trainee",c:"Fresher",co:"Company J",loc:"Hyderabad",exp:"0 to 1 year",d:"3 days ago"}]}
+];
+var state={tab:0,cat:"All",q:"",savedOnly:false,saved:{}};
+try{var raw=localStorage.getItem("dd_saved");if(raw)state.saved=JSON.parse(raw)||{};}catch(e){}
+function persist(){try{localStorage.setItem("dd_saved",JSON.stringify(state.saved));}catch(e){}}
+var $=function(id){return document.getElementById(id)};
+function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
+
+function render(){
+  var T=TABS[state.tab];
+  document.documentElement.style.setProperty("--accent","var("+T.color+")");
+  var tabs=$("tabs");tabs.innerHTML="";
+  TABS.forEach(function(x,i){
+    var b=el("button",null,x.name);b.setAttribute("role","tab");
+    b.setAttribute("aria-selected",i===state.tab);
+    b.onclick=function(){state.tab=i;state.cat="All";state.q="";$("q").value="";location.hash=x.id;render()};
+    tabs.appendChild(b);
+  });
+  var chips=$("chips");chips.innerHTML="";
+  T.cats.forEach(function(c){
+    var b=el("button","chip",c);b.setAttribute("aria-pressed",state.cat===c);
+    b.onclick=function(){state.cat=c;render()};chips.appendChild(b);
+  });
+  $("savedOnly").setAttribute("aria-pressed",state.savedOnly);
+  var list=$("list");list.innerHTML="";
+  var q=state.q.toLowerCase(),n=0;
+  T.items.forEach(function(it,idx){
+    var key=T.id+":"+idx;
+    if(state.cat!=="All"&&it.c!==state.cat)return;
+    if(state.savedOnly&&!state.saved[key])return;
+    if(q&&(it.t+" "+(it.s||"")+" "+(it.co||"")+" "+(it.loc||"")).toLowerCase().indexOf(q)<0)return;
+    n++;
+    var a=el("article");
+    a.appendChild(el("h2",null,it.t));
+    var sv=el("button","save",state.saved[key]?"Saved":"Save");
+    sv.setAttribute("aria-pressed",!!state.saved[key]);
+    sv.onclick=function(){if(state.saved[key])delete state.saved[key];else state.saved[key]=1;persist();render()};
+    a.appendChild(sv);
+    if(T.jobs){
+      var m=el("div","meta");
+      [it.co,it.loc,it.exp,it.d].forEach(function(v){m.appendChild(el("span",null,v))});
+      var tg=el("span","tag",it.c);m.insertBefore(tg,m.firstChild);
+      a.appendChild(m);
+      var ap=el("a","apply","Apply on original site");ap.href="#"+T.id;a.appendChild(ap);
+    }else{
+      a.appendChild(el("p",null,it.s));
+      var m2=el("div","meta");
+      var tg2=el("span","tag",it.c);m2.appendChild(tg2);
+      m2.appendChild(el("span",null,it.src));m2.appendChild(el("span",null,it.d));
+      a.appendChild(m2);
+    }
+    list.appendChild(a);
+  });
+  if(!n)list.appendChild(el("div","empty","Nothing matches. Clear the search or pick All."));
+}
+$("q").oninput=function(e){state.q=e.target.value;render()};
+$("savedOnly").onclick=function(){state.savedOnly=!state.savedOnly;render()};
+$("date").textContent=new Date().toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+(function(){var h=(location.hash||"").replace("#","");TABS.forEach(function(t,i){if(t.id===h)state.tab=i})})();
+render();
+</script>
+</body>
+</html>
